@@ -88,8 +88,15 @@ async function getJson<T>(url: string): Promise<T> {
 export const fetchOrders = (limit = 200) =>
   getJson<{ total: number; orders: OrderSummary[] }>(`/api/usage/orders?limit=${limit}`)
 
+export interface AccessDiagnostics {
+  sources: number
+  lines: number
+  parsed: number
+  sample: string | null
+}
+
 export const fetchAccess = (sinceSeconds: number, limit = 1000) =>
-  getJson<{ total: number; entries: AccessEntry[] }>(
+  getJson<{ total: number; entries: AccessEntry[]; diagnostics?: AccessDiagnostics }>(
     `/api/usage/access?sinceSeconds=${sinceSeconds}&limit=${limit}`,
   )
 

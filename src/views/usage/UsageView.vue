@@ -63,6 +63,16 @@
             <v-switch v-model="auto" color="primary" hide-details density="comfortable" :label="t('usage.autoRefresh')" />
           </div>
 
+          <v-alert v-if="diag && !entries.length" type="warning" variant="tonal" class="mb-4" icon="mdi-stethoscope">
+            <div class="font-weight-bold mb-1">{{ t('usage.diagTitle') }}</div>
+            <div v-if="diag.sources === 0">{{ t('usage.diagNoPods') }}</div>
+            <div v-else-if="diag.lines === 0">{{ t('usage.diagNoLines', { n: diag.sources }) }}</div>
+            <div v-else>
+              {{ t('usage.diagUnparsed', { n: diag.sources, lines: diag.lines, parsed: diag.parsed }) }}
+              <pre v-if="diag.sample" class="diag-sample mt-2">{{ diag.sample }}</pre>
+            </div>
+          </v-alert>
+
           <div class="d-flex flex-wrap ga-3 mb-4">
             <v-card class="stat-tile pa-4">
               <div class="text-h4 font-weight-bold text-primary">{{ entries.length }}</div>
@@ -161,6 +171,7 @@ import {
   orgLabel,
   whoOf,
   serviceOfPath,
+  type AccessDiagnostics,
   type AccessEntry,
   type OrderSummary,
 } from '@/composables/useUsage'
@@ -173,6 +184,7 @@ const loading = ref(false)
 const error = ref<string | null>(null)
 const orders = ref<OrderSummary[]>([])
 const entries = ref<AccessEntry[]>([])
+const diag = ref<AccessDiagnostics | null>(null)
 const range = ref(3600)
 const auto = ref(false)
 let timer: ReturnType<typeof setInterval> | undefined
@@ -242,7 +254,11 @@ async function load(): Promise<void> {
   error.value = null
   try {
     if (tab.value === 'orders' && features.orders) orders.value = (await fetchOrders()).orders
-    if (tab.value === 'access' && features.accessLogs) entries.value = (await fetchAccess(range.value)).entries
+    if (tab.value === 'access' && features.accessLogs) {
+      const r = await fetchAccess(range.value)
+      entries.value = r.entries
+      diag.value = r.diagnostics ?? null
+    }
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e)
   } finally {
@@ -262,4 +278,5 @@ onBeforeUnmount(() => clearInterval(timer))
 <style scoped>
 .stat-tile { min-width: 140px; }
 .path { word-break: break-all; }
+.diag-sample { white-space: pre-wrap; word-break: break-all; font-size: 0.75rem; opacity: 0.85; }
 </style>

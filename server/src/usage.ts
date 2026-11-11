@@ -250,8 +250,14 @@ function identityOfLine(rest: string): AccessIdentity | null {
 
 const SA_DIR = '/var/run/secrets/kubernetes.io/serviceaccount'
 
+export interface LogResult {
+  lines: string[]
+  /** Pods (o ficheros) de los que se leyó; 0 = el selector no encuentra ninguno. */
+  sources: number
+}
+
 export interface LogSource {
-  fetchLogs(sinceSeconds: number, tailLines: number): Promise<string[]>
+  fetchLogs(sinceSeconds: number, tailLines: number): Promise<LogResult>
 }
 
 function k8sGet(path: string): Promise<string> {
@@ -282,7 +288,7 @@ export function createFileLogSource(path: string): LogSource {
   return {
     async fetchLogs(_sinceSeconds, tailLines) {
       const lines = (await fs.promises.readFile(path, 'utf8')).split('\n')
-      return lines.slice(-tailLines)
+      return { lines: lines.slice(-tailLines), sources: 1 }
     },
   }
 }
@@ -295,16 +301,23 @@ export function createK8sLogSource(c: UsageConfig): LogSource {
         await k8sGet(`/api/v1/namespaces/${ns}/pods?labelSelector=${encodeURIComponent(c.logsSelector)}`),
       ) as { items?: { metadata?: { name?: string } }[] }
       const lines: string[] = []
+      let sources = 0
       for (const p of pods.items ?? []) {
         const name = p.metadata?.name
         if (!name) continue
         const q = `container=${encodeURIComponent(c.logsContainer)}&sinceSeconds=${sinceSeconds}&tailLines=${tailLines}`
         const log = await k8sGet(`/api/v1/namespaces/${ns}/pods/${encodeURIComponent(name)}/log?${q}`)
         lines.push(...log.split('\n'))
+        sources++
       }
-      return lines
+      return { lines, sources }
     },
   }
+}
+
+/** Acorta la línea y tapa lo que parezca un token, para poder mostrarla como ejemplo. */
+export function redact(line: string): string {
+  return line.replace(/[A-Za-z0-9_-]{40,}/g, '<token>').slice(0, 300)
 }
 
 // ── Router ────────────────────────────────────────────────────────────
@@ -361,12 +374,27 @@ export function createUsageRouter(
     const limit = clamp(req.query.limit, 500, 1, 5000)
     try {
       const source = deps.logSource ?? (c.logsFile ? createFileLogSource(c.logsFile) : createK8sLogSource(c))
-      const lines = await source.fetchLogs(sinceSeconds, 5000)
-      const entries = lines
-        .map(parseAccessLogLine)
-        .filter((e): e is AccessEntry => e !== null)
-        .sort((a, b) => b.time.localeCompare(a.time))
-      res.json({ total: entries.length, entries: entries.slice(0, limit) })
+      const { lines, sources } = await source.fetchLogs(sinceSeconds, 5000)
+      const nonEmpty = lines.filter((l) => l.trim() !== '')
+      const entries: AccessEntry[] = []
+      let unrecognised: string | null = null
+      for (const l of nonEmpty) {
+        const e = parseAccessLogLine(l)
+        if (e) entries.push(e)
+        else if (unrecognised === null && ACCESS_RE.test(l) === false) unrecognised = l
+      }
+      entries.sort((a, b) => b.time.localeCompare(a.time))
+      res.json({
+        total: entries.length,
+        entries: entries.slice(0, limit),
+        // Para entender por qué no sale nada: pods leídos, líneas y líneas reconocidas
+        diagnostics: {
+          sources,
+          lines: nonEmpty.length,
+          parsed: entries.length,
+          sample: unrecognised ? redact(unrecognised) : null,
+        },
+      })
     } catch (e) {
       logger.error(`usage/access: ${String(e)}`)
       res.status(502).json({ error: 'No se pudieron leer los logs de APISIX' })

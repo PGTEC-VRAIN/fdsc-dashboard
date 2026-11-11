@@ -386,6 +386,10 @@
     "funding": "Funded by the European Union – NextGenerationEU."
   },
   "usage": {
+    "diagTitle": "Why is this empty?",
+    "diagNoPods": "No pods matched the APISIX selector. Check ACCESS_LOGS_SELECTOR and ACCESS_LOGS_NAMESPACE.",
+    "diagNoLines": "Read {n} pod(s) but there are no log lines in this period (or the container name is wrong: ACCESS_LOGS_CONTAINER).",
+    "diagUnparsed": "Read {n} pod(s), {lines} lines, {parsed} recognised as access entries. If lines exist but none are recognised, the log format differs from the expected one; example of an unrecognised line:",
     "users": "Distinct users",
     "byOrg": "Requests by organisation",
     "noIdentity": "No identified requests",

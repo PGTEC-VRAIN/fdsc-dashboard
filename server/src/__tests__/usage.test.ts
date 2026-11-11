@@ -195,20 +195,37 @@ describe('accesos desde fichero', () => {
   })
 })
 
+describe('diagnóstico sin resultados', () => {
+  it('indica que el selector no encontró pods', async () => {
+    const logSource = { fetchLogs: vi.fn().mockResolvedValue({ sources: 0, lines: [] }) }
+    const res = await request(app(cfg({ logsNamespace: 'iiama' }), { logSource })).get('/api/usage/access')
+    expect(res.body.total).toBe(0)
+    expect(res.body.diagnostics).toEqual({ sources: 0, lines: 0, parsed: 0, sample: null })
+  })
+
+  it('muestra una línea no reconocida sin tokens', async () => {
+    const token = 'a'.repeat(60)
+    const logSource = { fetchLogs: vi.fn().mockResolvedValue({ sources: 1, lines: [`{"json":"${token}"}`] }) }
+    const res = await request(app(cfg({ logsNamespace: 'iiama' }), { logSource })).get('/api/usage/access')
+    expect(res.body.diagnostics.sample).toContain('<token>')
+    expect(res.body.diagnostics.sample).not.toContain(token)
+  })
+})
+
 describe('accesos', () => {
   it('devuelve las entradas parseadas, las más recientes primero', async () => {
     const logSource = {
-      fetchLogs: vi.fn().mockResolvedValue([
-        LINE,
-        LINE.replace('11:30:05', '11:45:00'),
-        'basura',
-      ]),
+      fetchLogs: vi.fn().mockResolvedValue({
+        sources: 2,
+        lines: [LINE, LINE.replace('11:30:05', '11:45:00'), 'basura'],
+      }),
     }
     const res = await request(app(cfg({ logsNamespace: 'iiama' }), { logSource })).get('/api/usage/access?sinceSeconds=600')
     expect(res.status).toBe(200)
     expect(res.body.total).toBe(2)
     expect(res.body.entries[0].time > res.body.entries[1].time).toBe(true)
     expect(logSource.fetchLogs).toHaveBeenCalledWith(600, 5000)
+    expect(res.body.diagnostics).toMatchObject({ sources: 2, lines: 3, parsed: 2, sample: 'basura' })
   })
 
   it('404 sin namespace configurado', async () => {

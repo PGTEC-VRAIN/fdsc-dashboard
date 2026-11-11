@@ -323,6 +323,10 @@
     "funding": "Financiado por la Unión Europea – NextGenerationEU."
   },
   "usage": {
+    "diagTitle": "¿Por qué está vacío?",
+    "diagNoPods": "Ningún pod coincide con el selector de APISIX. Revisa ACCESS_LOGS_SELECTOR y ACCESS_LOGS_NAMESPACE.",
+    "diagNoLines": "Se leyeron {n} pod(s) pero no hay líneas de log en este periodo (o el nombre del contenedor es incorrecto: ACCESS_LOGS_CONTAINER).",
+    "diagUnparsed": "Se leyeron {n} pod(s) y {lines} líneas, de las que {parsed} se reconocen como accesos. Si hay líneas pero ninguna se reconoce, el formato del log no es el esperado; ejemplo de línea no reconocida:",
     "users": "Usuarios distintos",
     "byOrg": "Peticiones por organización",
     "noIdentity": "Sin peticiones identificadas",
