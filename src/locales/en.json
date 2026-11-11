@@ -386,6 +386,12 @@
     "funding": "Funded by the European Union – NextGenerationEU."
   },
   "usage": {
+    "viewUsers": "Summary by user",
+    "viewRequests": "Requests (per user & minute)",
+    "minute": "Minute",
+    "services": "Services",
+    "firstAccess": "First access",
+    "lastAccess": "Last access",
     "diagTitle": "Why is this empty?",
     "diagNoPods": "No pods matched the APISIX selector. Check ACCESS_LOGS_SELECTOR and ACCESS_LOGS_NAMESPACE.",
     "diagNoLines": "Read {n} pod(s) but there are no log lines in this period (or the container name is wrong: ACCESS_LOGS_CONTAINER).",

@@ -112,40 +112,110 @@
               </v-card>
             </v-col>
             <v-col cols="12" md="8">
-              <v-card>
+              <v-btn-toggle v-model="accessView" mandatory color="primary" variant="outlined" density="comfortable" class="mb-3">
+                <v-btn value="users" prepend-icon="mdi-account-group-outline">{{ t('usage.viewUsers') }}</v-btn>
+                <v-btn value="requests" prepend-icon="mdi-format-list-bulleted">{{ t('usage.viewRequests') }}</v-btn>
+              </v-btn-toggle>
+
+              <!-- Resumen por persona -->
+              <v-card v-if="accessView === 'users'">
                 <v-data-table
-                  :headers="accessHeaders"
-                  :items="entries"
+                  :headers="userHeaders"
+                  :items="userRows"
                   :loading="loading"
                   :no-data-text="t('usage.noAccess')"
                   :items-per-page="15"
-                  density="compact"
-                  class="access-table"
+                  :sort-by="[{ key: 'last', order: 'desc' }]"
+                  density="comfortable"
                 >
-                  <template #[`item.time`]="{ item }">{{ fmt(item.time) }}</template>
-                  <template #[`item.method`]="{ item }"><v-chip size="x-small" label>{{ item.method }}</v-chip></template>
-                  <template #[`item.who`]="{ item }">
+                  <template #[`item.name`]="{ item }">
                     <div v-if="item.identity" :title="item.identity.subject ?? ''">
-                      <div class="font-weight-medium">{{ whoOf(item) }}</div>
+                      <div class="font-weight-medium">{{ item.name }}</div>
                       <div v-if="item.identity.credentialTypes.length" class="text-caption text-medium-emphasis">
                         {{ item.identity.credentialTypes.join(', ') }}
                       </div>
                     </div>
-                    <span v-else class="text-medium-emphasis">{{ t('usage.anonymous') }}</span>
-                  </template>
-                  <template #[`item.roles`]="{ item }">
-                    <v-chip v-for="r in item.identity?.roles ?? []" :key="r" size="x-small" variant="tonal" color="primary" class="mr-1 mb-1" label>{{ r }}</v-chip>
+                    <div v-else>
+                      <span class="text-medium-emphasis">{{ t('usage.anonymous') }}</span>
+                      <div class="text-caption text-medium-emphasis">{{ item.ips.join(', ') }}</div>
+                    </div>
                   </template>
                   <template #[`item.org`]="{ item }">
                     <v-chip v-if="item.identity?.organization" size="x-small" variant="outlined" prepend-icon="mdi-domain" :title="item.identity.organization">
                       {{ orgLabel(item.identity.organization) }}
                     </v-chip>
                   </template>
-                  <template #[`item.path`]="{ item }"><code class="path">{{ item.path }}</code></template>
-                  <template #[`item.status`]="{ item }">
-                    <v-chip size="x-small" :color="statusColor(item.status)" variant="flat" label>{{ item.status }}</v-chip>
+                  <template #[`item.first`]="{ item }">{{ fmt(item.first) }}</template>
+                  <template #[`item.last`]="{ item }">{{ fmt(item.last) }}</template>
+                  <template #[`item.count`]="{ item }">
+                    <span class="font-weight-bold">{{ item.count }}</span>
+                    <v-chip v-if="item.denied" size="x-small" color="warning" variant="flat" class="ml-2" label :title="t('usage.denied')">{{ item.denied }}</v-chip>
+                    <v-chip v-if="item.errors" size="x-small" color="error" variant="flat" class="ml-1" label :title="t('usage.errors')">{{ item.errors }}</v-chip>
                   </template>
-                  <template #[`item.seconds`]="{ item }">{{ Math.round(item.seconds * 1000) }} ms</template>
+                  <template #[`item.services`]="{ item }">
+                    <v-chip v-for="s in item.services" :key="s.key" size="x-small" variant="tonal" class="mr-1 mb-1" label>/{{ s.key }} · {{ s.count }}</v-chip>
+                  </template>
+                  <template #[`item.roles`]="{ item }"><RoleChips :roles="item.identity?.roles ?? []" /></template>
+                </v-data-table>
+              </v-card>
+
+              <!-- Peticiones agrupadas por persona y minuto -->
+              <v-card v-else>
+                <v-data-table
+                  v-model:expanded="expanded"
+                  :headers="accessHeaders"
+                  :items="groups"
+                  item-value="key"
+                  show-expand
+                  :loading="loading"
+                  :no-data-text="t('usage.noAccess')"
+                  :items-per-page="15"
+                  density="compact"
+                  class="access-table"
+                >
+                  <template #[`item.time`]="{ item }">{{ fmtMinute(item.time) }}</template>
+                  <template #[`item.who`]="{ item }">
+                    <div v-if="item.identity" :title="item.identity.subject ?? ''">
+                      <div class="font-weight-medium">{{ item.who }}</div>
+                      <div v-if="item.identity.credentialTypes.length" class="text-caption text-medium-emphasis">
+                        {{ item.identity.credentialTypes.join(', ') }}
+                      </div>
+                    </div>
+                    <span v-else class="text-medium-emphasis">{{ t('usage.anonymous') }}</span>
+                  </template>
+                  <template #[`item.roles`]="{ item }"><RoleChips :roles="item.identity?.roles ?? []" /></template>
+                  <template #[`item.org`]="{ item }">
+                    <v-chip v-if="item.identity?.organization" size="x-small" variant="outlined" prepend-icon="mdi-domain" :title="item.identity.organization">
+                      {{ orgLabel(item.identity.organization) }}
+                    </v-chip>
+                  </template>
+                  <template #[`item.count`]="{ item }"><span class="font-weight-bold">{{ item.count }}</span></template>
+                  <template #[`item.services`]="{ item }">
+                    <v-chip v-for="s in item.services" :key="s.key" size="x-small" variant="tonal" class="mr-1 mb-1" label>/{{ s.key }} · {{ s.count }}</v-chip>
+                  </template>
+                  <template #[`item.status`]="{ item }">
+                    <v-chip v-if="item.statusCounts.ok" size="x-small" color="success" variant="flat" class="mr-1" label>{{ item.statusCounts.ok }}</v-chip>
+                    <v-chip v-if="item.statusCounts.denied" size="x-small" color="warning" variant="flat" class="mr-1" label>{{ item.statusCounts.denied }}</v-chip>
+                    <v-chip v-if="item.statusCounts.errors" size="x-small" color="error" variant="flat" label>{{ item.statusCounts.errors }}</v-chip>
+                  </template>
+                  <template #[`item.seconds`]="{ item }">{{ Math.round(item.avgSeconds * 1000) }} ms</template>
+                  <template #expanded-row="{ columns, item }">
+                    <tr>
+                      <td :colspan="columns.length" class="pa-0">
+                        <v-table density="compact" class="expanded-requests">
+                          <tbody>
+                            <tr v-for="(e, i) in item.entries" :key="i">
+                              <td class="text-no-wrap">{{ fmt(e.time) }}</td>
+                              <td><v-chip size="x-small" label>{{ e.method }}</v-chip></td>
+                              <td><code class="path">{{ e.path }}</code></td>
+                              <td><v-chip size="x-small" :color="statusColor(e.status)" variant="flat" label>{{ e.status }}</v-chip></td>
+                              <td class="text-no-wrap">{{ Math.round(e.seconds * 1000) }} ms</td>
+                            </tr>
+                          </tbody>
+                        </v-table>
+                      </td>
+                    </tr>
+                  </template>
                 </v-data-table>
               </v-card>
             </v-col>
@@ -163,11 +233,14 @@
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import RoleChips from '@/components/RoleChips.vue'
 import {
   countBy,
   fetchAccess,
   fetchOrders,
+  groupByUserMinute,
   loadUsageFeatures,
+  summarizeUsers,
   orgLabel,
   whoOf,
   serviceOfPath,
@@ -185,6 +258,8 @@ const error = ref<string | null>(null)
 const orders = ref<OrderSummary[]>([])
 const entries = ref<AccessEntry[]>([])
 const diag = ref<AccessDiagnostics | null>(null)
+const accessView = ref<'users' | 'requests'>('users')
+const expanded = ref<string[]>([])
 const range = ref(3600)
 const auto = ref(false)
 let timer: ReturnType<typeof setInterval> | undefined
@@ -204,19 +279,29 @@ const orderHeaders = computed(() => [
   { title: t('common.id'), key: 'id', sortable: false },
 ])
 const accessHeaders = computed(() => [
-  { title: t('usage.date'), key: 'time' },
-  { title: t('usage.method'), key: 'method' },
-  { title: t('usage.path'), key: 'path' },
+  { title: t('usage.minute'), key: 'time' },
   { title: t('usage.who'), key: 'who', sortable: false },
-  { title: t('usage.roles'), key: 'roles', sortable: false },
   { title: t('usage.organization'), key: 'org', sortable: false },
-  { title: t('common.status'), key: 'status' },
+  { title: t('usage.roles'), key: 'roles', sortable: false },
+  { title: t('usage.requests'), key: 'count' },
+  { title: t('usage.services'), key: 'services', sortable: false },
+  { title: t('common.status'), key: 'status', sortable: false },
   { title: t('usage.latency'), key: 'seconds' },
-  { title: 'IP', key: 'ip' },
+])
+const userHeaders = computed(() => [
+  { title: t('usage.who'), key: 'name' },
+  { title: t('usage.organization'), key: 'org', sortable: false },
+  { title: t('usage.firstAccess'), key: 'first' },
+  { title: t('usage.lastAccess'), key: 'last' },
+  { title: t('usage.requests'), key: 'count' },
+  { title: t('usage.services'), key: 'services', sortable: false },
+  { title: t('usage.roles'), key: 'roles', sortable: false },
 ])
 
 const orderStates = computed(() => countBy(orders.value, (o) => o.state))
 const byService = computed(() => countBy(entries.value, (e) => serviceOfPath(e.path)).slice(0, 8))
+const groups = computed(() => groupByUserMinute(entries.value))
+const userRows = computed(() => summarizeUsers(entries.value))
 const distinctUsers = computed(() => new Set(entries.value.map(whoOf).filter(Boolean)).size)
 const byOrg = computed(() =>
   countBy(entries.value.filter((e) => e.identity?.organization), (e) => e.identity!.organization!).slice(0, 8),
@@ -241,6 +326,8 @@ const stateLabel = (s: string): string => (te('usage.state.' + s.toLowerCase()) 
 const statusColor = (s: number): string => (s >= 500 ? 'error' : s >= 400 ? 'warning' : 'success')
 const shortId = (id: string): string => id.split(':').pop()?.slice(0, 8) ?? id
 const fmt = (iso: string | null): string => (iso ? new Date(iso).toLocaleString() : '—')
+const fmtMinute = (iso: string): string =>
+  new Date(iso).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })
 
 /** Comprador: la parte relacionada que no es el propio proveedor. */
 function buyerOf(o: OrderSummary): string {
@@ -278,5 +365,6 @@ onBeforeUnmount(() => clearInterval(timer))
 <style scoped>
 .stat-tile { min-width: 140px; }
 .path { word-break: break-all; }
+.expanded-requests { background: rgba(var(--v-theme-primary), 0.04); }
 .diag-sample { white-space: pre-wrap; word-break: break-all; font-size: 0.75rem; opacity: 0.85; }
 </style>

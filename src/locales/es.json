@@ -323,6 +323,12 @@
     "funding": "Financiado por la Unión Europea – NextGenerationEU."
   },
   "usage": {
+    "viewUsers": "Resumen por usuario",
+    "viewRequests": "Peticiones (por usuario y minuto)",
+    "minute": "Minuto",
+    "services": "Servicios",
+    "firstAccess": "Primer acceso",
+    "lastAccess": "Último acceso",
     "diagTitle": "¿Por qué está vacío?",
     "diagNoPods": "Ningún pod coincide con el selector de APISIX. Revisa ACCESS_LOGS_SELECTOR y ACCESS_LOGS_NAMESPACE.",
     "diagNoLines": "Se leyeron {n} pod(s) pero no hay líneas de log en este periodo (o el nombre del contenedor es incorrecto: ACCESS_LOGS_CONTAINER).",

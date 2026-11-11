@@ -126,3 +126,102 @@ export function whoOf(e: AccessEntry): string {
   const i = e.identity
   return i?.username ?? i?.subject ?? ''
 }
+
+// ── Agrupaciones del registro de accesos ─────────────────────────────
+
+/** Clave estable de «quién»: la persona si hay credencial; si no, la IP. */
+export function whoKey(e: AccessEntry): string {
+  return e.identity ? `${e.identity.subject ?? ''}|${e.identity.username ?? ''}` : `anon:${e.ip}`
+}
+
+export interface RequestGroup {
+  key: string
+  /** Momento de la petición más reciente del grupo. */
+  time: string
+  who: string
+  identity: AccessIdentity | null
+  ip: string
+  count: number
+  entries: AccessEntry[]
+  services: { key: string; count: number }[]
+  /** Peor estado HTTP del grupo (para colorearlo). */
+  worstStatus: number
+  statusCounts: { ok: number; denied: number; errors: number }
+  avgSeconds: number
+  maxSeconds: number
+}
+
+const statusBucket = (s: number): 'ok' | 'denied' | 'errors' => (s >= 500 ? 'errors' : s >= 400 ? 'denied' : 'ok')
+
+/** Agrupa las peticiones de la misma persona (o IP, sin credencial) dentro del mismo minuto. */
+export function groupByUserMinute(entries: AccessEntry[]): RequestGroup[] {
+  const map = new Map<string, AccessEntry[]>()
+  for (const e of entries) {
+    const k = `${whoKey(e)}@${e.time.slice(0, 16)}`
+    const list = map.get(k)
+    if (list) list.push(e)
+    else map.set(k, [e])
+  }
+  const groups: RequestGroup[] = []
+  for (const [key, list] of map) {
+    list.sort((a, b) => b.time.localeCompare(a.time))
+    const counts = { ok: 0, denied: 0, errors: 0 }
+    for (const e of list) counts[statusBucket(e.status)]++
+    groups.push({
+      key,
+      time: list[0].time,
+      who: whoOf(list[0]),
+      identity: list[0].identity,
+      ip: list[0].ip,
+      count: list.length,
+      entries: list,
+      services: countBy(list, (e) => serviceOfPath(e.path)).map((s) => ({ key: s.key, count: s.count })),
+      worstStatus: Math.max(...list.map((e) => e.status)),
+      statusCounts: counts,
+      avgSeconds: list.reduce((a, e) => a + e.seconds, 0) / list.length,
+      maxSeconds: Math.max(...list.map((e) => e.seconds)),
+    })
+  }
+  return groups.sort((a, b) => b.time.localeCompare(a.time))
+}
+
+export interface UserSummary {
+  key: string
+  name: string
+  identity: AccessIdentity | null
+  ips: string[]
+  first: string
+  last: string
+  count: number
+  denied: number
+  errors: number
+  services: { key: string; count: number }[]
+}
+
+/** Resumen por persona: cuándo entró por primera y última vez, cuántas veces y a qué servicios. */
+export function summarizeUsers(entries: AccessEntry[]): UserSummary[] {
+  const map = new Map<string, AccessEntry[]>()
+  for (const e of entries) {
+    const k = whoKey(e)
+    const list = map.get(k)
+    if (list) list.push(e)
+    else map.set(k, [e])
+  }
+  const out: UserSummary[] = []
+  for (const [key, list] of map) {
+    const times = list.map((e) => e.time).sort()
+    out.push({
+      key,
+      name: whoOf(list[0]),
+      identity: list[0].identity,
+      ips: [...new Set(list.map((e) => e.ip))],
+      first: times[0],
+      last: times[times.length - 1],
+      count: list.length,
+      denied: list.filter((e) => e.status >= 400 && e.status < 500).length,
+      errors: list.filter((e) => e.status >= 500).length,
+      services: countBy(list, (e) => serviceOfPath(e.path)).map((s) => ({ key: s.key, count: s.count })),
+    })
+  }
+  return out.sort((a, b) => b.last.localeCompare(a.last))
+}
