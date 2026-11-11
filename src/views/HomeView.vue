@@ -278,15 +278,15 @@
           <v-card-text>
             <div class="d-flex align-center">
               <v-skeleton-loader
-                v-if="policiesStore.listLoading"
+                v-if="policiesStore.allLoading"
                 type="text"
                 width="60"
               />
               <span
-                v-else-if="!policiesStore.listError"
+                v-else-if="!policiesStore.allError"
                 class="text-h4 font-weight-bold text-primary"
               >
-                {{ policiesStore.totalPolicies }}
+                {{ ownPoliciesCount }}
               </span>
               <v-icon
                 v-else
@@ -501,13 +501,14 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useTilStore } from '@/stores/til'
 import { useTirStore } from '@/stores/tir'
 import { useCcsStore } from '@/stores/ccs'
 import { usePoliciesStore } from '@/stores/policies'
 import { useServices } from '@/composables/useServices'
+import { useProviderScope } from '@/composables/useProviderScope'
 import { useApisix } from '@/composables/useApisix'
 import { useGrafana } from '@/composables/useGrafana'
 import { useTracing } from '@/composables/useTracing'
@@ -522,6 +523,9 @@ const tilStore = useTilStore()
 const tirStore = useTirStore()
 const ccsStore = useCcsStore()
 const policiesStore = usePoliciesStore()
+const providerScope = useProviderScope()
+/** Solo cuenta las políticas de este proveedor. */
+const ownPoliciesCount = computed(() => policiesStore.allPolicies.filter((p) => providerScope.isOwn(p)).length)
 const { isVisible: apisixVisible } = useApisix()
 const { isVisible: grafanaVisible } = useGrafana()
 const { isVisible: tracingVisible } = useTracing()
@@ -558,10 +562,8 @@ onMounted(() => {
     })
   }
   if (services.odrl) {
-    const pageSize = policiesStore.pageSize
-    policiesStore.fetchPolicies(0, MINIMAL_PAGE_SIZE).then(() => {
-      policiesStore.pageSize = pageSize
-    })
+    // El PAP no devuelve el total: cargamos todas para contarlas bien
+    policiesStore.fetchAllPolicies()
   }
 })
 </script>

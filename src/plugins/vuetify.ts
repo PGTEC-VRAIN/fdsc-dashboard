@@ -25,14 +25,14 @@ import { aliases, mdi } from 'vuetify/iconsets/mdi'
 const lightTheme: ThemeDefinition = {
   dark: false,
   colors: {
-    primary: '#1565C0',
-    secondary: '#424242',
-    accent: '#FF6F00',
+    primary: '#3B5BDB',
+    secondary: '#475569',
+    accent: '#14B8A6',
     error: '#D32F2F',
     info: '#0288D1',
     success: '#388E3C',
     warning: '#F57C00',
-    background: '#FAFAFA',
+    background: '#F3F6FB',
     surface: '#FFFFFF',
     'on-primary': '#FFFFFF',
     'on-secondary': '#FFFFFF',
@@ -48,16 +48,16 @@ const lightTheme: ThemeDefinition = {
 const darkTheme: ThemeDefinition = {
   dark: true,
   colors: {
-    primary: '#42A5F5',
-    secondary: '#B0BEC5',
-    accent: '#FFB74D',
+    primary: '#7C93F5',
+    secondary: '#94A3B8',
+    accent: '#2DD4BF',
     error: '#EF5350',
     info: '#29B6F6',
     success: '#66BB6A',
     warning: '#FFA726',
-    background: '#121212',
-    surface: '#1E1E1E',
-    'on-primary': '#000000',
+    background: '#11142A',
+    surface: '#1B2040',
+    'on-primary': '#0B1020',
     'on-secondary': '#000000',
     'on-surface': '#EEEEEE',
     'on-background': '#EEEEEE',
@@ -75,6 +75,13 @@ const darkTheme: ThemeDefinition = {
  * Runtime toggling between themes is handled by the `useTheme` composable.
  */
 export const vuetify = createVuetify({
+  defaults: {
+    VCard: { rounded: 'lg', elevation: 1 },
+    VBtn: { rounded: 'lg' },
+    VChip: { rounded: 'lg' },
+    VTextField: { rounded: 'lg' },
+    VAlert: { rounded: 'lg' },
+  },
   icons: {
     defaultSet: 'mdi',
     aliases,

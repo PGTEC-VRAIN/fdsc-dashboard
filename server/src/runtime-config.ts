@@ -23,6 +23,7 @@
  */
 
 import { Router } from 'express'
+import { getUsageFeatures, loadUsageConfig } from './usage.js'
 import {
   type AppConfig,
   getEnabledServices,
@@ -60,6 +61,7 @@ export function createRuntimeConfigRouter(config: AppConfig): Router {
   const grafanaJson = JSON.stringify(getGrafanaConfig(config))
   const tracingJson = JSON.stringify(getTracingConfig(config))
   const credentialsJson = JSON.stringify(getCredentialsConfig(config))
+  const usageJson = JSON.stringify(getUsageFeatures(loadUsageConfig()))
 
   router.get('/config.js', (_req, res) => {
     const script = [
@@ -69,6 +71,7 @@ export function createRuntimeConfigRouter(config: AppConfig): Router {
       `window.__GRAFANA_CONFIG__ = ${grafanaJson};`,
       `window.__TRACING_CONFIG__ = ${tracingJson};`,
       `window.__CREDENTIALS_CONFIG__ = ${credentialsJson};`,
+      `window.__USAGE_CONFIG__ = ${usageJson};`,
     ].join('\n')
     res.status(HTTP_OK).type(CONTENT_TYPE_JAVASCRIPT).send(script)
   })

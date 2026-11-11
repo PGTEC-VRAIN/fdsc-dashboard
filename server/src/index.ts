@@ -41,6 +41,8 @@ import { createHealthRouter } from './health.js'
 import { createLogger } from './logger.js'
 import { mountProxyMiddleware } from './proxy.js'
 import { createRuntimeConfigRouter } from './runtime-config.js'
+import { createUsageRouter, loadUsageConfig } from './usage.js'
+import { createAuthenticatedGuard } from './auth-guard.js'
 import { mountStaticServing } from './static.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -64,6 +66,9 @@ app.use(createHealthRouter())
 
 // Runtime auth configuration
 app.use(createRuntimeConfigRouter(config))
+
+// Registro de uso (pedidos TM Forum y accesos de APISIX)
+app.use(createUsageRouter(loadUsageConfig(), createAuthenticatedGuard(config, logger), logger))
 
 // API proxy routes to downstream services
 mountProxyMiddleware(app, config, logger)

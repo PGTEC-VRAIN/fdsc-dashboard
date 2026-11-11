@@ -23,6 +23,7 @@ import { i18n } from './plugins/i18n'
 import { configureApiClients } from './api/config'
 
 import '@mdi/font/css/materialdesignicons.css'
+import './styles/brand.css'
 
 /* Initialise generated API clients with the correct base URLs. */
 configureApiClients()

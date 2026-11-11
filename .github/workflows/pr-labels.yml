@@ -23,6 +23,8 @@ permissions:
 
 jobs:
   check-labels:
+    # Solo en el repositorio original: en el fork publicamos con publish-ghcr.yml
+    if: github.repository == 'SEAMWARE/fdsc-dashboard'
     name: Check bump label
     runs-on: ubuntu-latest
     steps:
@@ -35,6 +37,8 @@ jobs:
           bash .github/scripts/check-labels.sh "$PR_LABELS"
 
   check-description:
+    # Solo en el repositorio original: en el fork publicamos con publish-ghcr.yml
+    if: github.repository == 'SEAMWARE/fdsc-dashboard'
     name: Check PR description format
     runs-on: ubuntu-latest
     steps:

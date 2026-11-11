@@ -109,6 +109,22 @@ function createMockResourceStore(
   return state
 }
 
+/** Mock de la store de políticas: el panel las cuenta cargándolas todas. */
+function createMockPoliciesStore(initialPageSize: number) {
+  return {
+    totalPolicies: 0,
+    pageSize: initialPageSize,
+    currentPage: 0,
+    listLoading: false,
+    listError: null,
+    allPolicies: [] as unknown[],
+    allLoading: false,
+    allError: null,
+    fetchPolicies: vi.fn(() => Promise.resolve()),
+    fetchAllPolicies: vi.fn(() => Promise.resolve()),
+  }
+}
+
 function mountComponent(): VueWrapper {
   return mount(HomeView, {
     global: {
@@ -135,7 +151,7 @@ describe('HomeView', () => {
       mockUseTilStore.mockReturnValue(tilState as any)
       mockUseTirStore.mockReturnValue(createMockResourceStore('fetchParticipants', 'totalParticipants', 10) as any)
       mockUseCcsStore.mockReturnValue(createMockResourceStore('fetchServices', 'totalServices', 10) as any)
-      mockUsePoliciesStore.mockReturnValue(createMockResourceStore('fetchPolicies', 'totalPolicies', 10) as any)
+      mockUsePoliciesStore.mockReturnValue(createMockPoliciesStore(10) as any)
 
       mountComponent()
       await flushPromises()
@@ -149,7 +165,7 @@ describe('HomeView', () => {
       mockUseTilStore.mockReturnValue(createMockResourceStore('fetchIssuers', 'totalIssuers', 10) as any)
       mockUseTirStore.mockReturnValue(tirState as any)
       mockUseCcsStore.mockReturnValue(createMockResourceStore('fetchServices', 'totalServices', 10) as any)
-      mockUsePoliciesStore.mockReturnValue(createMockResourceStore('fetchPolicies', 'totalPolicies', 10) as any)
+      mockUsePoliciesStore.mockReturnValue(createMockPoliciesStore(10) as any)
 
       mountComponent()
       await flushPromises()
@@ -163,7 +179,7 @@ describe('HomeView', () => {
       mockUseTilStore.mockReturnValue(createMockResourceStore('fetchIssuers', 'totalIssuers', 10) as any)
       mockUseTirStore.mockReturnValue(createMockResourceStore('fetchParticipants', 'totalParticipants', 10) as any)
       mockUseCcsStore.mockReturnValue(ccsState as any)
-      mockUsePoliciesStore.mockReturnValue(createMockResourceStore('fetchPolicies', 'totalPolicies', 10) as any)
+      mockUsePoliciesStore.mockReturnValue(createMockPoliciesStore(10) as any)
 
       mountComponent()
       await flushPromises()
@@ -172,8 +188,8 @@ describe('HomeView', () => {
       expect(ccsState.pageSize).toBe(15)
     })
 
-    it('restores the Policies store pageSize after the count-only fetch resolves', async () => {
-      const policiesState = createMockResourceStore('fetchPolicies', 'totalPolicies', 50)
+    it('counts policies by loading all of them, leaving the list pageSize untouched', async () => {
+      const policiesState = createMockPoliciesStore(50)
       mockUseTilStore.mockReturnValue(createMockResourceStore('fetchIssuers', 'totalIssuers', 10) as any)
       mockUseTirStore.mockReturnValue(createMockResourceStore('fetchParticipants', 'totalParticipants', 10) as any)
       mockUseCcsStore.mockReturnValue(createMockResourceStore('fetchServices', 'totalServices', 10) as any)
@@ -182,7 +198,8 @@ describe('HomeView', () => {
       mountComponent()
       await flushPromises()
 
-      expect(policiesState.fetchPolicies).toHaveBeenCalledWith(0, 1)
+      expect(policiesState.fetchAllPolicies).toHaveBeenCalledTimes(1)
+      expect(policiesState.fetchPolicies).not.toHaveBeenCalled()
       expect(policiesState.pageSize).toBe(50)
     })
 
@@ -191,7 +208,7 @@ describe('HomeView', () => {
       const tilState = createMockResourceStore('fetchIssuers', 'totalIssuers', 10)
       const tirState = createMockResourceStore('fetchParticipants', 'totalParticipants', 10)
       const ccsState = createMockResourceStore('fetchServices', 'totalServices', 10)
-      const policiesState = createMockResourceStore('fetchPolicies', 'totalPolicies', 10)
+      const policiesState = createMockPoliciesStore(10)
       mockUseTilStore.mockReturnValue(tilState as any)
       mockUseTirStore.mockReturnValue(tirState as any)
       mockUseCcsStore.mockReturnValue(ccsState as any)
@@ -203,7 +220,7 @@ describe('HomeView', () => {
       expect(tilState.fetchIssuers).not.toHaveBeenCalled()
       expect(tirState.fetchParticipants).not.toHaveBeenCalled()
       expect(ccsState.fetchServices).not.toHaveBeenCalled()
-      expect(policiesState.fetchPolicies).not.toHaveBeenCalled()
+      expect(policiesState.fetchAllPolicies).not.toHaveBeenCalled()
     })
   })
 })

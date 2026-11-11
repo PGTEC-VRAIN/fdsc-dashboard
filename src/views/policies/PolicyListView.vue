@@ -67,11 +67,17 @@
       v-model="activeTab"
       class="mb-4"
     >
+      <v-tab :value="TAB_SERVICES">
+        <v-icon start>
+          mdi-api
+        </v-icon>
+        {{ t('policy.bySvc.title') }}
+      </v-tab>
       <v-tab :value="TAB_GLOBAL">
         {{ t('policies.globalPolicies') }}
       </v-tab>
       <v-tab :value="TAB_BY_SERVICE">
-        {{ t('policies.byService') }}
+        {{ t('policies.service') }} PAP
       </v-tab>
     </v-tabs>
 
@@ -80,6 +86,10 @@
       v-model="activeTab"
       class="mt-2"
     >
+      <v-window-item :value="TAB_SERVICES">
+        <ServicePolicyGroups />
+      </v-window-item>
+
       <v-window-item :value="TAB_GLOBAL">
         <v-card>
           <v-data-table-server
@@ -391,12 +401,16 @@ import { useI18n } from 'vue-i18n'
 import { usePoliciesStore } from '@/stores/policies'
 import { useAuth } from '@/composables/useAuth'
 import type { Policy } from '@/api/generated/odrl'
+import ServicePolicyGroups from '@/components/ServicePolicyGroups.vue'
 
 /** Fallback value when the ODRL type cannot be determined. */
 const UNKNOWN_TYPE = 'Unknown'
 
 /** Dynamic slot name for the ODRL UID column (key contains a colon). */
 const odrlUidSlot = 'item.odrl:uid'
+
+/** Tab identifier for the global policies view. */
+const TAB_SERVICES = 'services'
 
 /** Tab identifier for the global policies view. */
 const TAB_GLOBAL = 'global'
@@ -407,6 +421,9 @@ const TAB_BY_SERVICE = 'by-service'
 /** Timeout in milliseconds for the success snackbar. */
 const SNACKBAR_TIMEOUT = 3000
 
+/** `initialTab` permite abrir la vista en otra pestaña (por defecto, «Por servicio»). */
+const props = withDefaults(defineProps<{ initialTab?: string }>(), { initialTab: 'services' })
+
 const { t } = useI18n()
 const router = useRouter()
 const store = usePoliciesStore()
@@ -415,7 +432,7 @@ const store = usePoliciesStore()
 const { canEdit, canDelete } = useAuth()
 
 /** Currently active tab. */
-const activeTab = ref(TAB_GLOBAL)
+const activeTab = ref(props.initialTab)
 
 /** New service ID for creation. */
 const newServiceId = ref('')
@@ -512,7 +529,9 @@ function navigateToCreateServicePolicy(serviceId: string): void {
 
 /** Refresh the currently active tab's data. */
 function refreshCurrentTab(): void {
-  if (activeTab.value === TAB_GLOBAL) {
+  if (activeTab.value === TAB_SERVICES) {
+    store.fetchAllPolicies()
+  } else if (activeTab.value === TAB_GLOBAL) {
     store.fetchPolicies()
   } else {
     store.fetchServices()

@@ -22,6 +22,11 @@
       density="default"
     >
       <v-app-bar-nav-icon @click="drawer = !drawer" />
+      <img
+        src="/logos/logo_PGTEC_mark.png"
+        alt="PGTEC"
+        class="app-bar-mark"
+      >
       <v-app-bar-title>{{ t('app.title') }}</v-app-bar-title>
       <v-spacer />
       <v-btn
@@ -32,6 +37,26 @@
       >
         <v-icon>{{ isAuthenticated ? 'mdi-shield-lock' : 'mdi-shield-lock-open-outline' }}</v-icon>
       </v-btn>
+      <v-menu offset="8">
+        <template #activator="{ props: langProps }">
+          <v-btn
+            v-bind="langProps"
+            icon
+            :aria-label="t('locale.switch')"
+          >
+            <v-icon>mdi-translate</v-icon>
+          </v-btn>
+        </template>
+        <v-list density="comfortable">
+          <v-list-item
+            v-for="l in availableLocales"
+            :key="l.code"
+            :title="l.label"
+            :active="currentLocale === l.code"
+            @click="setLocale(l.code)"
+          />
+        </v-list>
+      </v-menu>
       <v-btn
         icon
         :aria-label="t('theme.toggle')"
@@ -201,6 +226,12 @@
           to="/policies"
         />
         <v-list-item
+          v-if="usageVisible"
+          prepend-icon="mdi-chart-timeline-variant"
+          :title="t('nav.usage')"
+          to="/usage"
+        />
+        <v-list-item
           v-if="credentialsVisible"
           prepend-icon="mdi-certificate-outline"
           :title="t('nav.credentials')"
@@ -247,11 +278,14 @@
       <v-container fluid>
         <router-view />
       </v-container>
+      <AppFooter />
     </v-main>
   </v-app>
 </template>
 
 <script setup lang="ts">
+import AppFooter from '@/components/AppFooter.vue'
+import { loadUsageFeatures } from '@/composables/useUsage'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useTheme } from '@/composables/useTheme'
@@ -270,7 +304,9 @@ import { TRACING_ROUTE_NAME } from '@/tracing/constants'
 
 const { t } = useI18n()
 const { isDark, toggleTheme, initTheme } = useTheme()
-const { initLocale } = useLocale()
+const usageFeatures = loadUsageFeatures()
+const usageVisible = usageFeatures.orders || usageFeatures.accessLogs
+const { initLocale, setLocale, currentLocale, availableLocales } = useLocale()
 const { token, isAuthenticated, isAuthEnabled, setToken, clearToken, initAuth } = useAuth()
 const services = useServices()
 const { isVisible: apisixVisible } = useApisix()
@@ -401,6 +437,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.app-bar-mark { height: 34px; width: auto; margin: 0 4px 0 6px; filter: drop-shadow(0 1px 3px rgba(0,0,0,.3)); }
 /*
  * Render the JWT textarea in a monospace font so tokens are easier to read
  * and inspect. The inner `<textarea>` element does not inherit the parent's
