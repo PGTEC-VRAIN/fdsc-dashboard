@@ -25,6 +25,8 @@ env:
 
 jobs:
   build:
+    # Solo en el repositorio original: en el fork publicamos con publish-ghcr.yml
+    if: github.repository == 'SEAMWARE/fdsc-dashboard'
     name: Build & push PR image
     runs-on: ubuntu-latest
     steps:

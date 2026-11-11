@@ -139,6 +139,11 @@ const routes: RouteRecordRaw[] = [
     props: true,
   },
   {
+    path: '/usage',
+    name: 'usage',
+    component: () => import('@/views/usage/UsageView.vue'),
+  },
+  {
     path: '/policies',
     name: 'policies-list',
     component: () => import('@/views/policies/PolicyListView.vue'),

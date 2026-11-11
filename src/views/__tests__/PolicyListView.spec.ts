@@ -101,6 +101,10 @@ function createMockStoreState(overrides: Record<string, unknown> = {}) {
     savingService: false,
     isEmpty: true,
     totalPages: 1,
+    allPolicies: [],
+    allLoading: false,
+    allError: null,
+    fetchAllPolicies: vi.fn(),
     fetchPolicies: mockFetchPolicies,
     fetchPolicyDetail: vi.fn(),
     createPolicy: vi.fn(),
@@ -124,6 +128,7 @@ function mountComponent(storeOverrides: Record<string, unknown> = {}): VueWrappe
   mockUsePoliciesStore.mockReturnValue(storeState as any)
 
   return mount(PolicyListView, {
+    props: { initialTab: 'global' },
     global: {
       plugins: [createPinia(), createTestI18n(), createTestVuetify()],
       stubs: {
@@ -165,7 +170,7 @@ describe('PolicyListView', () => {
     it('should render tab headers for Global and By Service', () => {
       const wrapper = mountComponent()
       expect(wrapper.text()).toContain('Global Policies')
-      expect(wrapper.text()).toContain('By Service')
+      expect(wrapper.text()).toContain('By service')
     })
 
     it('should show loading skeleton when listLoading is true', () => {

@@ -16,6 +16,7 @@
  */
 import { createI18n } from 'vue-i18n'
 import en from '@/locales/en.json'
+import es from '@/locales/es.json'
 
 /**
  * Message schema type derived from the English locale.
@@ -33,11 +34,12 @@ export type MessageSchema = typeof en
  * 2. Import it here and add to the `messages` object
  * 3. Register it in `AVAILABLE_LOCALES` inside `src/composables/useLocale.ts`
  */
-export const i18n = createI18n<[MessageSchema], 'en'>({
+export const i18n = createI18n<[MessageSchema], 'en' | 'es'>({
   legacy: false,
-  locale: 'en',
+  locale: 'es',
   fallbackLocale: 'en',
   messages: {
     en,
+    es: es as unknown as MessageSchema,
   },
 })

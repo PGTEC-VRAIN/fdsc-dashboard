@@ -21,7 +21,7 @@ import { useI18n } from 'vue-i18n'
 const LOCALE_STORAGE_KEY = 'fdsc-dashboard-locale'
 
 /** Default locale used when no preference is stored. */
-const DEFAULT_LOCALE = 'en'
+const DEFAULT_LOCALE = 'es'
 
 /**
  * Available locales with their display labels.
@@ -31,6 +31,7 @@ const DEFAULT_LOCALE = 'en'
  * 3. Add an entry here
  */
 export const AVAILABLE_LOCALES = [
+  { code: 'es', label: 'Español' },
   { code: 'en', label: 'English' },
 ] as const
 

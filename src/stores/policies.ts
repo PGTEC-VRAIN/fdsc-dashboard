@@ -74,6 +74,12 @@ export const usePoliciesStore = defineStore('policies', () => {
   /** Whether a service create/delete operation is in progress. */
   const savingService = ref(false)
 
+  // ── All-policies state (para agrupar por servicio y contar bien) ────
+  /** Todas las políticas, cargadas página a página. */
+  const allPolicies = ref<Policy[]>([])
+  const allLoading = ref(false)
+  const allError = ref<string | null>(null)
+
   /** Whether the policies list is empty (after a successful fetch). */
   const isEmpty = computed(() => !listLoading.value && policies.value.length === 0)
 
@@ -126,6 +132,30 @@ export const usePoliciesStore = defineStore('policies', () => {
       totalPolicies.value = 0
     } finally {
       listLoading.value = false
+    }
+  }
+
+  /**
+   * Carga TODAS las políticas del PAP, pidiéndolas en páginas de 100.
+   * El PAP no devuelve el total, así que se pagina hasta recibir una página corta.
+   */
+  async function fetchAllPolicies(): Promise<void> {
+    const size = 100
+    allLoading.value = true
+    allError.value = null
+    try {
+      const acc: Policy[] = []
+      for (let page = 0; page < 100; page++) {
+        const items = (await PolicyService.getPolicies({ pageSize: size, page })) ?? []
+        acc.push(...items)
+        if (items.length < size) break
+      }
+      allPolicies.value = acc
+    } catch (error) {
+      allError.value = error instanceof ApiError ? error.message : String(error)
+      allPolicies.value = []
+    } finally {
+      allLoading.value = false
     }
   }
 
@@ -436,6 +466,10 @@ export const usePoliciesStore = defineStore('policies', () => {
   return {
     // State
     policies,
+    allPolicies,
+    allLoading,
+    allError,
+    fetchAllPolicies,
     totalPolicies,
     pageSize,
     currentPage,

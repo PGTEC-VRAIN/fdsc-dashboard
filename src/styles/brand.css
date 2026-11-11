@@ -1,0 +1,23 @@
+/* Estilo PGTEC-VRAIN para el panel del conector */
+:root { --brand-grad: linear-gradient(100deg, #3b5bdb 0%, #6741d9 60%, #9c36b5 100%); }
+
+.v-application { font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif !important; }
+.v-application h1, .v-application .text-h4, .v-application .text-h5 { letter-spacing: -0.01em; font-weight: 700; }
+
+/* Barra superior con degradado */
+.v-app-bar.v-toolbar { background: var(--brand-grad) !important; color: #fff; box-shadow: 0 2px 14px rgba(59, 91, 219, 0.35) !important; }
+.v-app-bar-title { font-weight: 700; letter-spacing: 0.01em; }
+
+/* Menú lateral */
+.v-navigation-drawer { border-right: 0 !important; box-shadow: 2px 0 18px rgba(15, 23, 42, 0.06); }
+.v-navigation-drawer .v-list-item { border-radius: 10px; margin: 2px 8px; }
+.v-navigation-drawer .v-list-item--active { background: rgba(var(--v-theme-primary), 0.14); color: rgb(var(--v-theme-primary)); font-weight: 600; }
+
+/* Tarjetas y tablas */
+.v-card { border: 1px solid rgba(var(--v-border-color), 0.08); transition: box-shadow 0.2s ease, transform 0.2s ease; }
+.v-card--hover:hover, .resource-card:hover { box-shadow: 0 10px 28px rgba(59, 91, 219, 0.18) !important; transform: translateY(-2px); }
+.v-data-table { border-radius: 14px; overflow: hidden; }
+.v-data-table thead th { text-transform: uppercase; font-size: 0.72rem !important; letter-spacing: 0.06em; opacity: 0.85; }
+.v-tab { text-transform: none; font-weight: 600; letter-spacing: 0; }
+.v-expansion-panel { border: 1px solid rgba(var(--v-border-color), 0.1); }
+code { background: rgba(var(--v-theme-primary), 0.1); color: rgb(var(--v-theme-primary)); padding: 1px 6px; border-radius: 6px; font-size: 0.85em; }

@@ -228,8 +228,10 @@ describe('PolicyDetailView', () => {
       expect(wrapper.text()).toContain('EU')
     })
 
-    it('should display formatted ODRL JSON', () => {
+    it('should display formatted ODRL JSON behind the (i) button', async () => {
       const wrapper = mountComponent({ selectedPolicy: MOCK_POLICY })
+      expect(wrapper.text()).not.toContain('"@type"')
+      await wrapper.find('button[aria-label]').trigger('click')
       expect(wrapper.text()).toContain('"@type"')
     })
 

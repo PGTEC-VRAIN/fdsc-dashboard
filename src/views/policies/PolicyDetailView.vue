@@ -194,77 +194,7 @@
           </v-chip>
         </v-card-title>
         <v-card-text>
-          <!-- Permissions display -->
-          <template v-if="odrlPermissions.length > 0">
-            <div class="text-subtitle-2 text-medium-emphasis mb-2">
-              {{ t('policies.permissions') }}
-            </div>
-            <v-card
-              v-for="(perm, permIdx) in odrlPermissions"
-              :key="permIdx"
-              variant="outlined"
-              class="mb-3 pa-3"
-            >
-              <div class="mb-2">
-                <span class="text-caption text-medium-emphasis">{{ t('policies.target') }}:</span>
-                <v-chip
-                  size="small"
-                  variant="tonal"
-                  color="info"
-                  class="ml-2"
-                >
-                  {{ perm.target }}
-                </v-chip>
-              </div>
-              <div class="mb-2">
-                <span class="text-caption text-medium-emphasis">{{ t('policies.action') }}:</span>
-                <v-chip
-                  size="small"
-                  variant="tonal"
-                  color="success"
-                  class="ml-2"
-                >
-                  {{ perm.action }}
-                </v-chip>
-              </div>
-              <template v-if="perm.constraint && perm.constraint.length > 0">
-                <div class="text-caption text-medium-emphasis mb-1">
-                  {{ t('policies.constraints') }}:
-                </div>
-                <div
-                  v-for="(con, conIdx) in perm.constraint"
-                  :key="conIdx"
-                  class="ml-4 mb-1 d-flex align-center ga-1"
-                >
-                  <v-chip
-                    size="small"
-                    variant="outlined"
-                  >
-                    {{ con.leftOperand }}
-                  </v-chip>
-                  <v-chip
-                    size="small"
-                    variant="tonal"
-                    color="warning"
-                  >
-                    {{ con.operator }}
-                  </v-chip>
-                  <v-chip
-                    size="small"
-                    variant="outlined"
-                  >
-                    {{ con.rightOperand }}
-                  </v-chip>
-                </div>
-              </template>
-            </v-card>
-          </template>
-
-          <!-- Raw ODRL JSON fallback -->
-          <div class="text-subtitle-2 text-medium-emphasis mt-3 mb-2">
-            {{ t('policies.rawJson') }}
-          </div>
-          <pre class="text-body-2 pa-3 bg-grey-lighten-4 rounded overflow-x-auto">{{ formattedOdrl }}</pre>
+          <PolicyExplained :value="store.selectedPolicy.odrl" />
         </v-card-text>
       </v-card>
 
@@ -292,13 +222,11 @@ import { onMounted, computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { usePoliciesStore } from '@/stores/policies'
+import PolicyExplained from '@/components/PolicyExplained.vue'
 import { useAuth } from '@/composables/useAuth'
 
 /** Timeout in milliseconds for snackbar messages. */
 const SNACKBAR_TIMEOUT = 3000
-
-/** Number of spaces used for JSON indentation. */
-const JSON_INDENT = 2
 
 const props = defineProps<{ id: string; serviceId?: string }>()
 const { t } = useI18n()
@@ -372,19 +300,7 @@ const parsedOdrl = computed(() => {
 /** The ODRL @type extracted from the parsed ODRL JSON (e.g. "Set", "Offer"). */
 const odrlType = computed(() => parsedOdrl.value?.['@type'] ?? null)
 
-/** ODRL permissions extracted from the parsed JSON. */
-const odrlPermissions = computed(() => {
-  if (!parsedOdrl.value?.permission) return []
-  return Array.isArray(parsedOdrl.value.permission) ? parsedOdrl.value.permission : []
-})
 
-/** Pretty-printed ODRL JSON for display. */
-const formattedOdrl = computed(() => {
-  if (!parsedOdrl.value) {
-    return store.selectedPolicy?.odrl ?? ''
-  }
-  return JSON.stringify(parsedOdrl.value, null, JSON_INDENT)
-})
 
 onMounted(() => {
   if (isServicePolicy.value) {
